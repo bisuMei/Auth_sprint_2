@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:    
+  tests:    
+    container_name: auth_tests
+    build: .
+    image: auth_sprint_2_main
+    entrypoint: >
+      sh -c "pip install -r app/tests/functional/requirements.txt
+      && pytest app/tests/functional/src -p no:warnings"
