@@ -2,12 +2,13 @@ from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
 
-from .config import Config
+from .config import Config, oauth_config
 from app.main.api import api
 from app.main.service.db import init_db
 from .model.roles import Role
 from .model.users import User
 from .service.cache import jwt_redis_cache
+from .service.oauth import init_oauth
 from .utils import db_helper
 
 db = SQLAlchemy()
@@ -35,8 +36,10 @@ def jwt_helper(jwt: JWTManager):
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-
+    app.secret_key = config.config.SECRET_APP_KEY
     api.init_app(app)
+
+    init_oauth(app)
 
     init_db()
 

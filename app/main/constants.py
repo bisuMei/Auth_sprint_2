@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from datetime import timedelta
 
+GOOGLE_OAUTH = 'google'
 
 DEFAULT_TTL = timedelta(hours=1)
 
