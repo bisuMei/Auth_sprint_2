@@ -2,13 +2,14 @@ from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
 
-from .config import Config
+from .config import FlaskAppConfig
 from app.main.api import api
+from app.main.service.tracer_service import init_tracer
 from app.main.service.db import init_db
-from .model.roles import Role
 from .model.users import User
 from .service.cache import jwt_redis_cache
 from .utils import db_helper
+
 
 db = SQLAlchemy()
 
@@ -34,15 +35,17 @@ def jwt_helper(jwt: JWTManager):
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(Config)
+    app.config.from_object(FlaskAppConfig)
 
     api.init_app(app)
 
     init_db()
 
+    init_tracer(app)
     jwt = JWTManager(app)
     jwt_helper(jwt)
 
-    db_helper()
+    db_helper()   
+    
 
     return app

@@ -18,9 +18,12 @@ from app.main.constants import ResponseMessage
 from app.main.model.roles import Role
 from app.main.model.users import User
 from app.main.model.user_auth_data import UserAuthData
+from app.main.service.tracer_service import tracer
 from app.main.service.db import db_session
 from app.main.service.cache import jwt_redis_cache
 from app.main.utils import check_refresh_token_current_user, superuser_required
+
+import opentracing
 
 api = Namespace('Users', description='Login, logout, register user')
 
@@ -40,7 +43,7 @@ class UserRegister(Resource):
     @api.response(HTTPStatus.OK.value, ResponseMessage.SUCCESS)
     @api.response(HTTPStatus.NOT_FOUND.value, ResponseMessage.USER_EXISTS)
     @api.doc(body=user_model, description="Register new user")
-    @api.expect(user_model, validate=True)
+    @api.expect(user_model, validate=True)    
     def post(self):
         try:
             user = User(**api.payload)
@@ -57,7 +60,7 @@ class UserRegister(Resource):
 
 @api.route('/user/login')
 class UserLogin(Resource):
-
+    
     parser = reqparse.RequestParser()
     parser.add_argument('login', type=str)
     parser.add_argument('password', type=str)
@@ -69,10 +72,15 @@ class UserLogin(Resource):
     @api.response(HTTPStatus.OK.value, "{access_token: jwt_access_token, refresh_token: jwt_refresh_token}")
     @api.response(HTTPStatus.UNAUTHORIZED.value, ResponseMessage.INVALID_CREDENTIALS)
     @api.doc(body=user_login_fields, description="Login into account")
-    @api.expect(user_login_fields, validate=True)
-    def post(self):
-        data = self.parser.parse_args()
-        user = User.query.filter_by(login=data.get('login')).one_or_none()
+    @api.expect(user_login_fields, validate=True)    
+    def post(self):      
+        request_id = request.headers.get('X-Request-Id')          
+        
+        parent_span = tracer.get_span('login')                
+        with opentracing.tracer.start_span('get-user', child_of=parent_span) as span:
+            data = self.parser.parse_args()
+            user = User.query.filter_by(login=data.get('login')).one_or_none()
+            span.set_tag('user-login', user.login)
         
         if user and user.check_password(user.login, data.get('password')):
             permissions = user.get_all_permissions()

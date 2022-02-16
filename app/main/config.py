@@ -10,7 +10,7 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-class Config(object):
+class FlaskAppConfig(object):
 
     DEBUG = os.environ.get('DEBUG', False)
 
@@ -35,4 +35,4 @@ class Config(object):
     SECRET_PASS_KEY = os.environ.get('SECRET_PASS_KEY')
 
 
-config = Config()
+config = FlaskAppConfig()
