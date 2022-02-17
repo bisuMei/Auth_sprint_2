@@ -1,6 +1,8 @@
 from http import HTTPStatus
+from signal import pthread_kill
 
-from flask import jsonify
+import opentracing
+from flask import jsonify, request
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -18,9 +20,10 @@ from app.main.constants import ResponseMessage
 from app.main.model.roles import Role
 from app.main.model.users import User
 from app.main.model.user_auth_data import UserAuthData
-from app.main.service.db import db_session
 from app.main.service.cache import jwt_redis_cache
-from app.main.utils import check_refresh_token_current_user, superuser_required, insert_auth_data
+from app.main.service.db import db_session
+from app.main.service.tracer_service import tracer
+from app.main.utils import check_refresh_token_current_user, superuser_required
 
 api = Namespace('Users', description='Login, logout, register user')
 
@@ -71,8 +74,14 @@ class UserLogin(Resource):
     @api.doc(body=user_login_fields, description="Login into account")
     @api.expect(user_login_fields, validate=True)
     def post(self):
-        data = self.parser.parse_args()
-        user = User.query.filter_by(login=data.get('login')).one_or_none()
+        request_id = request.headers.get('X-Request-Id')          
+        print(request_id)
+
+        parent_span = tracer.get_span()        
+        with opentracing.tracer.start_span('get-user-db', child_of=parent_span) as span:           
+            data = self.parser.parse_args()
+            user = User.query.filter_by(login=data.get('login')).one_or_none()
+            span.set_tag('user.logint', user.login)
         
         if user and user.check_password(user.login, data.get('password')):
             permissions = user.get_all_permissions()
