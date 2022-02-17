@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from .config import Config
 from app.main.api import api
 from app.main.service.db import init_db
+from app.main.service.tracer_service import init_tracer
 from .model.roles import Role
 from .model.users import User
 from .service.cache import jwt_redis_cache
@@ -40,6 +41,7 @@ def create_app():
 
     init_db()
 
+    init_tracer(app)
     jwt = JWTManager(app)
     jwt_helper(jwt)
 
