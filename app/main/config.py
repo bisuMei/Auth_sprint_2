@@ -25,6 +25,9 @@ class Config(object):
     REDIS_PORT = os.environ.get('REDIS_PORT')
     REDIS_DB = os.environ.get('REDIS_DB')
 
+    JAEGER_HOST=os.environ.get('JAEGER_HOST')
+    JAEGER_PORT=os.environ.get('JAEGER_PORT')
+
     SQLALCHEMY_DATABASE_URI = f'postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}'  # noqa E501
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
