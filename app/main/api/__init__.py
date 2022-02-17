@@ -1,5 +1,6 @@
 from flask_restx import Api
 
+from app.main.api.v1.oauth_api import api as api_oauth
 from app.main.api.v1.auth import api as auth_api
 from app.main.api.v1.perms import api as role_api
 
@@ -11,3 +12,4 @@ api = Api(
 
 api.add_namespace(auth_api, path='/api/v1')
 api.add_namespace(role_api, path='/api/v1')
+api.add_namespace(api_oauth, path='/api/v1')

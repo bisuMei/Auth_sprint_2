@@ -10,6 +10,15 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+class OauthConfig(object):
+
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+    GOOGLE_OAUTH_SCOPE = os.environ.get("GOOGLE_OAUTH_SCOPE")
+    GOOGLE_SERVER_METADATA_URL = os.environ.get("GOOGLE_SERVER_METADATA_URL")
+    REDIRECT_URI = os.environ.get("REDIRECT_URI")
+
+
 class Config(object):
 
     DEBUG = os.environ.get('DEBUG', False)
@@ -33,6 +42,8 @@ class Config(object):
     JWT_REFRESH_TOKEN_EXPIRES = os.environ.get('JWT_REFRESH_TOKEN_EXPIRES', timedelta(days=10))
 
     SECRET_PASS_KEY = os.environ.get('SECRET_PASS_KEY')
+    SECRET_APP_KEY = os.environ.get("SECRET_APP_KEY")
 
 
 config = Config()
+oauth_config = OauthConfig()

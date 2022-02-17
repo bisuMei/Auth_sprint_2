@@ -1,12 +1,14 @@
 from functools import wraps
 from http import HTTPStatus
 
-from flask import jsonify
+from flask import jsonify, request
 from flask_jwt_extended import current_user, get_jwt, verify_jwt_in_request
 
 from app.main.constants import SUPERUSER_PERMISSIONS, ResponseMessage
 from app.main.model.roles import Role
+from app.main.model.user_auth_data import UserAuthData
 from app.main.service.cache import jwt_redis_cache
+from app.main.service.db import db_session
 
 
 def check_refresh_token_current_user():
@@ -57,3 +59,12 @@ def superuser_required():
 def db_helper():
     """Create default role with default permissions after db init."""
     Role.insert_role()
+
+
+def insert_auth_data(user: 'User') -> None:
+    """Inser user-agent and datetime data into `UserAuthData`."""
+    db_session.add(UserAuthData(
+        user_id=user.id,
+        user_agent=request.headers.get('User-Agent')
+    ))
+    db_session.commit()

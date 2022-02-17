@@ -4,8 +4,6 @@ services:
     container_name: auth_postgres
     expose:
       - '5432'
-    ports:
-      - "5432:5432"
     env_file:
       - ./.env
       
