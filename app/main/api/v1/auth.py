@@ -77,6 +77,11 @@ class UserLogin(Resource):
         request_id = request.headers.get('X-Request-Id')          
         print(request_id)
 
+        # request_id = request.headers.get('X-Request-Id')
+        # parent_span = tracer.get_span()
+        # parent_span.set_tag('http.request_id', request_id)
+        
+
         parent_span = tracer.get_span()        
         with opentracing.tracer.start_span('get-user-db', child_of=parent_span) as span:           
             data = self.parser.parse_args()

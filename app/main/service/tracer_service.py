@@ -5,20 +5,22 @@ from flask_opentracing import FlaskTracer
 tracer = FlaskTracer()
 
 
-config_ = {
-    'sampler': {
-        'type': 'const',
-        'param': 1,
-    }
-}
-
-
 def _setup_jaeger():
     config = Config(
-        config=config_,
+        config={
+            'sampler': {
+                'type': 'const',
+                'param': 1,
+            },
+            'local_agent': {
+                'reporting_host': "jaeger",
+                'reporting_port': 6831,
+            }
+        },
         service_name='movies-api',
-        validate=True,
-    )
+        validate=True
+    )     
+    
     return config.initialize_tracer()
 
 

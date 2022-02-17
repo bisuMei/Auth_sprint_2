@@ -14,8 +14,17 @@ services:
     container_name: auth_redis
     expose:
       - "6379"
+    ports:
+      - 6379:6379
     command:
       - redis-server
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
 
   main:
     init: true
@@ -30,6 +39,8 @@ services:
       - ./.env
     expose:
       - "5000"
+    ports:
+      - 5000:5000
     depends_on:
       - postgres
       - redis
