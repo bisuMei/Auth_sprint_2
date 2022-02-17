@@ -6,7 +6,6 @@ from .config import Config, oauth_config
 from app.main.api import api
 from app.main.service.db import init_db
 from app.main.service.tracer_service import init_tracer
-from .model.roles import Role
 from .model.users import User
 from .service.cache import jwt_redis_cache
 from .service.oauth import init_oauth
