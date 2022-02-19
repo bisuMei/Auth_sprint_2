@@ -21,7 +21,7 @@ from app.main.model.user_auth_data import UserAuthData
 from app.main.service.cache import jwt_redis_cache
 from app.main.service.db import db_session
 from app.main.service.tracer_service import tracer
-from app.main.utils import check_refresh_token_current_user, superuser_required
+from app.main.utils import check_refresh_token_current_user, superuser_required, insert_auth_data
 
 
 api = Namespace('Users', description='Login, logout, register user')
@@ -100,7 +100,7 @@ class UserLogin(Resource):
                 )
                 refresh_token = create_refresh_token(user.id, additional_claims={'perms': permissions})
 
-                self.insert_auth_data(user)            
+                insert_auth_data(user)            
 
                 jwt_redis_cache.set(
                     str(user.id), 
@@ -112,14 +112,6 @@ class UserLogin(Resource):
             response = jsonify(message=ResponseMessage.INVALID_CREDENTIALS)
             response.status_code = HTTPStatus.UNAUTHORIZED
             return response
-
-    def insert_auth_data(self, user: 'User') -> None:
-        """Inser user-agent and datetime data into `UserAuthData`."""
-        db_session.add(UserAuthData(
-            user_id=user.id,
-            user_agent=request.headers.get('User-Agent')
-        ))
-        db_session.commit()
 
 
 @api.response(HTTPStatus.OK.value, ResponseMessage.REVOKED_TOKEN)
