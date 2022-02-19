@@ -113,6 +113,14 @@ class UserLogin(Resource):
             response.status_code = HTTPStatus.UNAUTHORIZED
             return response
 
+    def insert_auth_data(self, user: 'User') -> None:
+        """Inser user-agent and datetime data into `UserAuthData`."""
+        db_session.add(UserAuthData(
+            user_id=user.id,
+            user_agent=request.headers.get('User-Agent')
+        ))
+        db_session.commit()
+
 
 @api.response(HTTPStatus.OK.value, ResponseMessage.REVOKED_TOKEN)
 @api.doc(description="Logout from account. Expected access jwt token into headers.")
