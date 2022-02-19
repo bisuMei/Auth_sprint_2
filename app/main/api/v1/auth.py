@@ -1,5 +1,4 @@
 from http import HTTPStatus
-from signal import pthread_kill
 
 import opentracing
 from flask import jsonify, request
@@ -12,7 +11,6 @@ from flask_jwt_extended import (
     jwt_required,
 )
 from flask_restx import Namespace, Resource, fields, reqparse
-
 from sqlalchemy.exc import IntegrityError
 
 from app.main.config import config
@@ -24,6 +22,7 @@ from app.main.service.cache import jwt_redis_cache
 from app.main.service.db import db_session
 from app.main.service.tracer_service import tracer
 from app.main.utils import check_refresh_token_current_user, superuser_required
+
 
 api = Namespace('Users', description='Login, logout, register user')
 
@@ -45,11 +44,18 @@ class UserRegister(Resource):
     @api.doc(body=user_model, description="Register new user")
     @api.expect(user_model, validate=True)
     def post(self):
+        request_id = request.headers.get('X-Request-Id')                          
+        parent_span = tracer.get_span()
+        with opentracing.tracer.start_span('retister', child_of=parent_span) as span:
+            span.set_tag('http.request_id', request_id)
+
         try:
-            user = User(**api.payload)
-            user.roles.append(Role.query.filter_by(default=True).first())
-            db_session.add(user)
-            db_session.commit()
+            with opentracing.tracer.start_span('create-new-user', child_of=parent_span) as span:                
+                user = User(**api.payload)
+                user.roles.append(Role.query.filter_by(default=True).first())
+                db_session.add(user)
+                db_session.commit()
+                span.set_tag('user', user)
         except IntegrityError:
             response = jsonify(message=ResponseMessage.USER_EXISTS)
             response.status_code = HTTPStatus.NOT_FOUND
@@ -72,43 +78,40 @@ class UserLogin(Resource):
     @api.response(HTTPStatus.OK.value, "{access_token: jwt_access_token, refresh_token: jwt_refresh_token}")
     @api.response(HTTPStatus.UNAUTHORIZED.value, ResponseMessage.INVALID_CREDENTIALS)
     @api.doc(body=user_login_fields, description="Login into account")
-    @api.expect(user_login_fields, validate=True)
+    @api.expect(user_login_fields, validate=True)    
     def post(self):
-        request_id = request.headers.get('X-Request-Id')          
-        print(request_id)
-
-        # request_id = request.headers.get('X-Request-Id')
-        # parent_span = tracer.get_span()
-        # parent_span.set_tag('http.request_id', request_id)
-        
-
-        parent_span = tracer.get_span()        
-        with opentracing.tracer.start_span('get-user-db', child_of=parent_span) as span:           
+        request_id = request.headers.get('X-Request-Id')                          
+        parent_span = tracer.get_span()
+        with opentracing.tracer.start_span('login', child_of=parent_span) as span:
+            span.set_tag('http.request_id', request_id)
+            
+        with opentracing.tracer.start_span('get-user-db', child_of=parent_span) as span:
             data = self.parser.parse_args()
             user = User.query.filter_by(login=data.get('login')).one_or_none()
-            span.set_tag('user.logint', user.login)
-        
-        if user and user.check_password(user.login, data.get('password')):
-            permissions = user.get_all_permissions()
-            access_token = create_access_token(
-                identity=user.id,
-                fresh=True,
-                additional_claims={'perms': permissions}
-            )
-            refresh_token = create_refresh_token(user.id, additional_claims={'perms': permissions})
+            span.set_tag('user.logint', user)
 
-            self.insert_auth_data(user)            
+        with opentracing.tracer.start_span('tokens') as span:
+            if user and user.check_password(user.login, data.get('password')):
+                permissions = user.get_all_permissions()
+                access_token = create_access_token(
+                    identity=user.id,
+                    fresh=True,
+                    additional_claims={'perms': permissions}
+                )
+                refresh_token = create_refresh_token(user.id, additional_claims={'perms': permissions})
 
-            jwt_redis_cache.set(
-                str(user.id), 
-                get_jti(refresh_token), 
-                ttl=config.JWT_REFRESH_TOKEN_EXPIRES
-            )
-            return jsonify(access_token=access_token, refresh_token=refresh_token)
+                self.insert_auth_data(user)            
 
-        response = jsonify(message=ResponseMessage.INVALID_CREDENTIALS)
-        response.status_code = HTTPStatus.UNAUTHORIZED
-        return response
+                jwt_redis_cache.set(
+                    str(user.id), 
+                    get_jti(refresh_token), 
+                    ttl=config.JWT_REFRESH_TOKEN_EXPIRES
+                )
+                return jsonify(access_token=access_token, refresh_token=refresh_token)
+
+            response = jsonify(message=ResponseMessage.INVALID_CREDENTIALS)
+            response.status_code = HTTPStatus.UNAUTHORIZED
+            return response
 
     def insert_auth_data(self, user: 'User') -> None:
         """Inser user-agent and datetime data into `UserAuthData`."""
@@ -126,7 +129,7 @@ class UserLogout(Resource):
 
     @api.doc("Logout. Access token into headers is required.")
     @jwt_required(locations='headers')
-    def post(self):
+    def post(self):        
         jti = get_jwt()["jti"]
         jwt_redis_cache.set(jti, "", ttl=config.JWT_ACCESS_TOKEN_EXPIRES)
         return jsonify(message=ResponseMessage.REVOKED_TOKEN)
@@ -140,13 +143,26 @@ class RefreshToken(Resource):
     @api.doc(description="Refresh token. Refresh token into headers is required.")
     @api.response(HTTPStatus.OK.value, "{access_token: jwt_access_token, refresh_token: jwt_refresh_token}")
     def post(self):
-        permissions = current_user.get_all_permissions()
-        access_token = create_access_token(
-            identity=current_user.id,
-            fresh=True,
-            additional_claims={'perms': permissions}
-        )
-        refresh_token = create_refresh_token(current_user.id, additional_claims={'perms': permissions})
+        request_id = request.headers.get('X-Request-Id')                          
+        parent_span = tracer.get_span()
+        with opentracing.tracer.start_span('refresh-token', child_of=parent_span) as span:
+            span.set_tag('http.request_id', request_id)
+
+        with opentracing.tracer.start_span('get-permissions', child_of=parent_span) as span:            
+            permissions = current_user.get_all_permissions()
+            span.set_tag('permissions', permissions)
+
+        with opentracing.tracer.start_span('access-refresh-token', child_of=parent_span) as span:            
+            access_token = create_access_token(
+                identity=current_user.id,
+                fresh=True,
+                additional_claims={'perms': permissions}
+            )
+            span.set_tag('access-token', access_token)
+
+            refresh_token = create_refresh_token(current_user.id, additional_claims={'perms': permissions})
+            span.set_tag('refresh-token', refresh_token)
+
         jwt_redis_cache.set(str(current_user.id), get_jti(refresh_token), ttl=config.JWT_REFRESH_TOKEN_EXPIRES)
         return jsonify(access_token=access_token, refresh_token=refresh_token)
 
@@ -168,11 +184,18 @@ class UpdateUser(Resource):
     @jwt_required(locations='headers')
     @api.expect(user_model, validate=True)
     def patch(self, user_id):
-        user = User.query.get(user_id)
-        if user:
-            user.patch(api.payload)
-            db_session.commit()
-            return jsonify(message=ResponseMessage.SUCCESS)
+        request_id = request.headers.get('X-Request-Id')
+        parent_span = tracer.get_span()
+        with opentracing.tracer.start_span('update-user-data', child_of=parent_span) as span:
+            span.set_tag('http.request_id', request_id)
+
+        with opentracing.tracer.start_span('get-user', child_of=parent_span) as span:            
+            user = User.query.get(user_id)
+            if user:
+                user.patch(api.payload)
+                db_session.commit()
+                span.set_tag('user-updated', user)
+                return jsonify(message=ResponseMessage.SUCCESS)
 
         response = jsonify(message=f"user {user_id} not found")
         response.status_code = HTTPStatus.NOT_FOUND
@@ -192,13 +215,20 @@ class UserHistory(Resource):
     @api.doc(description="History user data. Access token into headers is required.")
     @jwt_required(locations='headers')
     def get(self, user_id):
-        user_data = UserAuthData.query.filter_by(user_id=user_id)
-        history = [{
-            'id': usr.id,
-            'user_agent': usr.user_agent,
-            'created_at': usr.created_at
-            } for usr in user_data
-        ]
+        request_id = request.headers.get('X-Request-Id')
+        parent_span = tracer.get_span()
+        with opentracing.tracer.start_span('get-auth-history', child_of=parent_span) as span:
+            span.set_tag('http.request_id', request_id)
+
+        with opentracing.tracer.start_span('get-history', child_of=parent_span) as span:            
+            user_data = UserAuthData.query.filter_by(user_id=user_id)
+            history = [{
+                'id': usr.id,
+                'user_agent': usr.user_agent,
+                'created_at': usr.created_at
+                } for usr in user_data
+            ]
+            span.set_tag('user-auth-history', history)
         return jsonify(history)
 
 
