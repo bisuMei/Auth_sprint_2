@@ -7,7 +7,7 @@ from app.main.config import config
 tracer = FlaskTracer()
 
 
-def _setup_jaeger():
+def setup_jaeger(service_name : str = 'movies-api'):
     tracer_config = Config(
         config={
             'sampler': {
@@ -19,7 +19,7 @@ def _setup_jaeger():
                 'reporting_port': config.JAEGER_PORT,
             }
         },
-        service_name='movies-api',
+        service_name=service_name,
         validate=True
     )     
     
@@ -27,4 +27,4 @@ def _setup_jaeger():
 
 
 def init_tracer(app):
-    FlaskTracer(_setup_jaeger, True, app=app)
+    FlaskTracer(setup_jaeger, True, app=app)
