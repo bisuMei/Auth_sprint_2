@@ -37,10 +37,7 @@ jaeger-client==4.8.0
 Jinja2==3.0.3
 jsonschema==4.4.0
 MarkupSafe==2.0.1
-<<<<<<< HEAD
 oauthlib==3.2.0
-=======
->>>>>>> fdfd6e3540f78298da0c426338c95ab6b2d4e50c
 opentracing==2.4.0
 packaging==21.3
 pg8000==1.24.0
