@@ -20,6 +20,7 @@ from app.main.model.users import User
 from app.main.model.user_auth_data import UserAuthData
 from app.main.service.cache import jwt_redis_cache
 from app.main.service.db import db_session
+from app.main.service.rate_limit import bucket
 from app.main.service.tracer_service import tracer
 from app.main.utils import check_refresh_token_current_user, superuser_required, insert_auth_data
 
@@ -42,7 +43,7 @@ class UserRegister(Resource):
     @api.response(HTTPStatus.OK.value, ResponseMessage.SUCCESS)
     @api.response(HTTPStatus.NOT_FOUND.value, ResponseMessage.USER_EXISTS)
     @api.doc(body=user_model, description="Register new user")
-    @api.expect(user_model, validate=True)
+    @api.expect(user_model, validate=True)    
     def post(self):
         request_id = request.headers.get('X-Request-Id')                          
         parent_span = tracer.get_span()
@@ -78,8 +79,8 @@ class UserLogin(Resource):
     @api.response(HTTPStatus.OK.value, "{access_token: jwt_access_token, refresh_token: jwt_refresh_token}")
     @api.response(HTTPStatus.UNAUTHORIZED.value, ResponseMessage.INVALID_CREDENTIALS)
     @api.doc(body=user_login_fields, description="Login into account")
-    @api.expect(user_login_fields, validate=True)    
-    def post(self):
+    @api.expect(user_login_fields, validate=True)      
+    def post(self):        
         request_id = request.headers.get('X-Request-Id')                          
         parent_span = tracer.get_span()
         with opentracing.tracer.start_span('login', child_of=parent_span) as span:
@@ -205,7 +206,7 @@ class UserHistory(Resource):
 
     @api.response(HTTPStatus.OK.value, description="User auth", model=user_auth_model)
     @api.doc(description="History user data. Access token into headers is required.")
-    @jwt_required(locations='headers')
+    @jwt_required(locations='headers')    
     def get(self, user_id):
         request_id = request.headers.get('X-Request-Id')
         parent_span = tracer.get_span()
@@ -248,6 +249,7 @@ class PermissionUserRole(Resource):
         params={'user_id': 'User id', 'role_name': "Role name", 'permission_name': "Permission name"},
     )
     @api.expect(parser, validate=True)
+    @bucket.rate_limit
     def get(self):
         args = self.parser.parse_args()
         if user := User.query.filter_by(id=args['user_id']).one_or_none():
