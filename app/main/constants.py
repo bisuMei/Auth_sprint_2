@@ -41,3 +41,4 @@ class ResponseMessage:
     OBJECT_NOT_FOUND = 'Object not found'
     SUPERUSER_ONLY = 'Superuser only!'
     USE_REFRESH_TOKEN = 'Please use refresh token related to current user.'
+    TOO_MANY_REQUESTS = 'Too many requests from user.'

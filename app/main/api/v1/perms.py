@@ -10,6 +10,7 @@ from app.main.constants import ResponseMessage
 from app.main.model.roles import Role, UserRoles
 from app.main.model.users import User
 from app.main.service.db import db_session
+from app.main.service.rate_limit import bucket
 from app.main.service.tracer_service import tracer
 from app.main.utils import superuser_required
 
@@ -51,6 +52,7 @@ class RoleUser(Resource):
     @api.response(HTTPStatus.NOT_FOUND.value, ResponseMessage.INVALID_USER_ROLE)
     @api.doc(description='Set role to user', params={'user_id': "User_id", 'role_id': "Role_id"})
     @api.expect(parser, validate=True)
+    @bucket.rate_limit
     def post(self):        
         request_id = request.headers.get('X-Request-Id')
         parent_span = tracer.get_span()
@@ -81,6 +83,7 @@ class RoleUser(Resource):
     @api.response(HTTPStatus.NOT_FOUND.value, ResponseMessage.INVALID_USER_ROLE)
     @api.doc(description='Remove user role.', params={'user_id': "User_id", 'role_id': "Role_id"})
     @api.expect(parser, validate=True)
+    @bucket.rate_limit
     def delete(self):
         request_id = request.headers.get('X-Request-Id')
         parent_span = tracer.get_span()
@@ -115,6 +118,7 @@ class RoleUpdateDelete(Resource):
     @api.response(HTTPStatus.NOT_FOUND.value, ResponseMessage.OBJECT_NOT_FOUND)
     @api.doc(description='Update role', body=role_model)
     @api.expect(role_model, validate=True)
+    @bucket.rate_limit
     def patch(self, role_id):
         request_id = request.headers.get('X-Request-Id')
         parent_span = tracer.get_span()
@@ -139,6 +143,7 @@ class RoleUpdateDelete(Resource):
     @api.response(HTTPStatus.NO_CONTENT.value, description="")
     @api.response(HTTPStatus.NOT_FOUND.value, ResponseMessage.OBJECT_NOT_FOUND)
     @api.doc(description='Delete role')
+    @bucket.rate_limit
     def delete(self, role_id):
         request_id = request.headers.get('X-Request-Id')
         parent_span = tracer.get_span()
@@ -166,6 +171,7 @@ class RoleCreate(Resource):
     @api.response(HTTPStatus.NOT_FOUND.value, ResponseMessage.ROLE_EXISTS)
     @api.doc(description='Create role', body=role_model)
     @api.expect(role_model, validate=True)
+    @bucket.rate_limit
     def post(self):
         request_id = request.headers.get('X-Request-Id')
         parent_span = tracer.get_span()
@@ -189,6 +195,7 @@ class RoleCreate(Resource):
     @superuser_required()
     @api.response(HTTPStatus.OK.value, description="[{role_id, name, permissions}]")
     @api.doc(description='Get roles')
+    @bucket.rate_limit
     def get(self):
         request_id = request.headers.get('X-Request-Id')
         parent_span = tracer.get_span()
