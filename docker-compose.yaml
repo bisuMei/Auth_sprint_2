@@ -2,6 +2,8 @@ version: "3.8"
 
 x-redis: &redis
   image: redis:6.2.6    
+  expose: ["6379"]
+  command: ["redis-server"]
 
 services:
   postgres:
@@ -14,15 +16,11 @@ services:
       
   bucket:
     <<: *redis
-    container_name: auth_bucket
-    expose: ["6379"]
-    command: ['redis-server']
+    container_name: auth_bucket    
 
   redis:
     <<: *redis    
-    container_name: auth_redis
-    expose: ["6379"]
-    command: ["redis-server"]
+    container_name: auth_redis    
 
   jaeger:
     image: jaegertracing/all-in-one:latest
