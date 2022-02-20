@@ -1,20 +1,38 @@
 # Проектная работа 7 спринта
 
-Упростите регистрацию и аутентификацию пользователей в Auth-сервисе, добавив вход через социальные сервисы. Список сервисов выбирайте исходя из целевой аудитории онлайн-кинотеатра — подумайте, какими социальными сервисами они пользуются. Например, использовать [OAuth от Github](https://docs.github.com/en/free-pro-team@latest/developers/apps/authorizing-oauth-apps){target="_blank"} — не самая удачная идея. Ваши пользователи не разработчики и вряд ли имеют аккаунт на Github. А вот добавить Twitter, Facebook, VK, Google, Yandex или Mail будет хорошей идеей.
+## Сервис авторизации
 
-Вам не нужно делать фронтенд в этой задаче и реализовывать собственный сервер OAuth. Нужно реализовать протокол со стороны потребителя.
+Предварительно добавить .env файл, для примера использовать .env.simple
 
-Информация по OAuth у разных поставщиков данных: 
+Поднимаем сервис 
+#### docker-compose up -d
+### Валидация параметров в запросе происходит с помощью @api.expect(validate=True)
+#### Используется связка nginx + gunicorn + gevent
+#### Докуменатация(контракт) и апи flaskrest-x
+#### Для работы с jwt используется flask-jwt_extended
+#### Реализована авторизация для GOOGLE
 
-- [Twitter](https://developer.twitter.com/en/docs/authentication/overview){target="_blank"},
-- [Facebook](https://developers.facebook.com/docs/facebook-login/){target="_blank"},
-- [VK](https://vk.com/dev/access_token){target="_blank"},
-- [Google](https://developers.google.com/identity/protocols/oauth2){target="_blank"},
-- [Yandex](https://yandex.ru/dev/oauth/?turbo=true){target="_blank"},
-- [Mail](https://api.mail.ru/docs/guides/oauth/){target="_blank"}.
+### Ссылка на AsyncApi https://github.com/bisuMei/AsyncApi
+### Сервис доработан с учетом логики AuthService. Контракт соблюдается с использованием jwt токена, в котором находится информция о пользователе.
 
-## Дополнительное задание
 
-Реализуйте возможность открепить аккаунт в соцсети от личного кабинета. 
+### При регистрации ползьователся назначаются стандартные права.
 
-Решение залейте в репозиторий текущего спринта и отправьте на ревью.
+## Добавление суперпользователя
+### По дефолту у суперпользователя добавится супер-роль с супер-правами
+
+```export FLASK_APP=run.py```
+```flask createsuperuser```
+
+- login (обязательный параметр)
+- password (обязательный параметр)
+- email
+- name
+- last-name
+
+```flask --help``` - все команды
+```flask createsuper --help``` - описание полей для создания суперпользователя
+
+## Для поднятия тестового контейнера:
+
+#### docker-compose -f docker-compose.tests.yaml up -d
