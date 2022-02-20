@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import uuid
+
 from typing import Union
 
 from sqlalchemy import Column, String
@@ -15,20 +16,20 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
-    login = Column(String(100), unique=True, nullable=False)
+    login = Column(String(100), nullable=False, unique=True)
     password = Column(String(150), nullable=False)
-    email = Column(String(100), nullable=False)
-    name_first = Column(String(100), nullable=False)
-    name_last = Column(String(100), nullable=False)
     user_auth_data = relationship('UserAuthData')
+    profile = relationship('Profile')
     roles = relationship('Role', secondary='user_roles', backref=backref('users', lazy='dynamic'))
 
-    def __init__(self, login, password, email, name_first, name_last):
+    def __init__(self, login, password, email, name_first, name_last, birth_date):
         self.login = login
         self.password = self._set_password(password)
-        self.email = email
-        self.name_first = name_first
-        self.name_last = name_last
+        self.profile.user_id = self.id
+        self.profile.email = email
+        self.profile.name_first = name_first
+        self.profile.name_last = name_last
+        self.profile.birth_date = birth_date
 
     def __repr__(self):
         return f'<User {self.login}>' 
@@ -67,4 +68,3 @@ class User(Base):
                 self.password = self._set_password(value)
             elif value and hasattr(self, key):
                 setattr(self, key, value)
-                

@@ -6,11 +6,11 @@ from app.main import oauth_config
 from app.main.config import config
 from app.main.model.roles import Role
 from app.main.model.users import User
-from app.main.constants import GOOGLE_OAUTH
+from app.main.constants import GOOGLE_OAUTH, BASE_DATE
 from app.main.service.db import db_session
 from app.main.service.oauth import oauth
 from app.main.service.cache import jwt_redis_cache
-from app.main.utils import insert_auth_data
+from app.main.utils import insert_auth_data, create_user_profile
 
 api = Namespace('Oauth', description='Login, logout, register user with social service.')
 
@@ -43,6 +43,7 @@ class OauthAuthorization(Resource):
             "email": user_info["email"],
             "name_first": user_info["given_name"],
             "name_last": user_info["family_name"],
+            "birth_date": BASE_DATE,
         }
         user = User.query.filter_by(login=user_data['login']).one_or_none()
         if not user:
@@ -50,6 +51,8 @@ class OauthAuthorization(Resource):
             user.roles.append(Role.query.filter_by(default=True).first())
             db_session.add(user)
             db_session.commit()
+
+            create_user_profile(user, user_data)
 
         if user and user.check_password(user.login, user_data.get('password')):
             permissions = user.get_all_permissions()

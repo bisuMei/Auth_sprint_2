@@ -3,5 +3,6 @@
     "password": "bestPassword1234",
     "email": "some@mail.ru",
     "name_first": "John",
-    "name_last": "Deer"
+    "name_last": "Deer",
+    "birth_date": "1990-08-10"
 }

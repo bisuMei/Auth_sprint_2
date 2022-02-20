@@ -18,4 +18,5 @@ def init_db():
     import app.main.model.users
     import app.main.model.user_auth_data
     import app.main.model.roles
+    import app.main.model.profile
     Base.metadata.create_all(bind=engine)

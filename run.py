@@ -1,3 +1,5 @@
+import datetime
+
 import click
 
 from app.main import create_app
@@ -21,12 +23,15 @@ app = create_app()
               help='User last name.')
 @click.option('--user_email', prompt='User email', default='',
               help='User email.')
+@click.option('--birth_date', prompt='User birthdate', default='',
+              help='User email.')
 def createsuperuser(
     user_login: str, 
     user_password: str,
     user_name: str,
     user_last_name: str,
-    user_email: str
+    user_email: str,
+    user_birth_date: datetime.date,
 ) -> None:
 
     superuser = User(
@@ -35,6 +40,7 @@ def createsuperuser(
         user_name,
         user_last_name,
         user_email,
+        user_birth_date
     )
 
     super_role = Role(
