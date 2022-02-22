@@ -1,6 +1,8 @@
 """App constants."""
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import date, timedelta
+
+BASE_DATE = date.min.strftime('%Y-%m-%d')
 
 GOOGLE_OAUTH = 'google'
 

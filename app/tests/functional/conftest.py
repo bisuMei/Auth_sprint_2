@@ -5,10 +5,12 @@ import pytest
 
 from app.main import create_app
 from app.main.constants import SUPERUSER_ROLE, SUPERUSER_PERMISSIONS
+from app.main.model.profile import Profile
 from app.main.model.user_auth_data import UserAuthData
 from app.main.model.users import User
 from app.main.model.roles import Role
 from app.main.service.db import db_session
+from app.main.utils import create_user_profile
 
 pytest_plugins = (
     "app.tests.functional.utils.roles_conftest",
@@ -47,12 +49,13 @@ def user_for_test(load_test_user_for_register):
         permissions=SUPERUSER_PERMISSIONS,
     )
     user.roles.append(role)
-
     db_session.add(user)
     db_session.add(role)
     db_session.commit()
+    create_user_profile(user, load_test_user_for_register)
     yield user
     UserAuthData.query.filter_by(user_id=user.id).delete()
+    Profile.query.filter_by(user_id=user.id).delete()
     db_session.delete(user)
     db_session.delete(role)
     db_session.commit()

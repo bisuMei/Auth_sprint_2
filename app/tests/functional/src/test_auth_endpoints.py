@@ -4,6 +4,7 @@ from http import HTTPStatus
 from flask import jsonify
 
 from app.main.model.users import User
+from app.main.model.profile import Profile
 from app.main.model.user_auth_data import UserAuthData
 from app.main.service.db import db_session
 
@@ -24,6 +25,8 @@ def test_register_user(
         data=json.dumps(load_test_user_for_register), 
         headers=headers)
 
+    user = User.query.filter_by(login=load_test_user_for_register.get('login')).one_or_none()
+    Profile.query.filter_by(user_id=user.id).delete()
     User.query.filter_by(login=load_test_user_for_register.get('login')).delete()
     db_session.commit()
     

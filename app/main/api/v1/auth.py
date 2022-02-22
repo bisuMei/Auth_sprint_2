@@ -22,8 +22,7 @@ from app.main.service.cache import jwt_redis_cache
 from app.main.service.db import db_session
 from app.main.service.rate_limit import bucket
 from app.main.service.tracer_service import tracer
-from app.main.utils import check_refresh_token_current_user, superuser_required, insert_auth_data
-
+from app.main.utils import check_refresh_token_current_user, superuser_required, insert_auth_data, create_user_profile
 
 api = Namespace('Users', description='Login, logout, register user')
 
@@ -37,6 +36,7 @@ class UserRegister(Resource):
         'email': fields.String(required=True, description='User email'),
         'name_first': fields.String(description='User name'),
         'name_last': fields.String(description='User last name'),
+        'birth_date': fields.Date(description="User birth date", default="1990-10-08")
     })
 
     # validation makes with @api.expect(validate=True) decorator
@@ -56,6 +56,8 @@ class UserRegister(Resource):
                 user.roles.append(Role.query.filter_by(default=True).first())
                 db_session.add(user)
                 db_session.commit()
+
+                create_user_profile(user, api.payload)
                 span.set_tag('user', user)
         except IntegrityError:
             response = jsonify(message=ResponseMessage.USER_EXISTS)
@@ -89,7 +91,7 @@ class UserLogin(Resource):
         with opentracing.tracer.start_span('get-user-db', child_of=parent_span) as span:
             data = self.parser.parse_args()
             user = User.query.filter_by(login=data.get('login')).one_or_none()
-            span.set_tag('user.logint', user)
+            span.set_tag('user.login', user)
 
         with opentracing.tracer.start_span('tokens') as span:
             if user and user.check_password(user.login, data.get('password')):
@@ -101,7 +103,7 @@ class UserLogin(Resource):
                 )
                 refresh_token = create_refresh_token(user.id, additional_claims={'perms': permissions})
 
-                insert_auth_data(user)            
+                insert_auth_data(user)
 
                 jwt_redis_cache.set(
                     str(user.id), 
@@ -169,6 +171,7 @@ class UpdateUser(Resource):
         'email': fields.String(required=True, description='User email'),
         'name_first': fields.String(description='User name'),
         'name_last': fields.String(description='User last name'),
+        'birth_date': fields.String(description='User birth date'),
     })
 
     @api.response(HTTPStatus.OK.value, ResponseMessage.SUCCESS)
