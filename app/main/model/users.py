@@ -54,7 +54,7 @@ class User(Base):
         return f'User with id {self.id} does not have this permissions.'
 
     def get_all_permissions(self):
-        return [role.permissions for role in self.roles]
+        return [{role.name: role.permissions} for role in self.roles]
 
     def check_password(self, login: str, password: str) -> bool:
         valid_sign = self._sign_data(login + password)

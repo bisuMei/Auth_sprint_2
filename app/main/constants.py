@@ -5,6 +5,9 @@ from datetime import date, timedelta
 BASE_DATE = date.min.strftime('%Y-%m-%d')
 
 GOOGLE_OAUTH = 'google'
+OAUTH_PROVIDERS = {
+    GOOGLE_OAUTH: 'google',
+}
 
 DEFAULT_TTL = timedelta(hours=1)
 
