@@ -12,6 +12,7 @@ from app.main.constants import ResponseMessage
 
 REQUEST_LIMIT_PER_MINUTE = 10
 
+
 class Bucket:
     """Bucket."""
     
@@ -42,11 +43,3 @@ class Bucket:
 
 
 bucket = Bucket(Redis(host='auth_bucket', port=config.REDIS_PORT, db=config.REDIS_DB))
-
-
-
-
-
-
-
-        
